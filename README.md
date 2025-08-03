@@ -10,7 +10,9 @@ thats what I used:
 * CsvHelper 33.1.0
 
 Commands that I used to make Tables in PostgreSQL server:
+
 ---------for Results table--------------------
+
 CREATE TABLE Results (
 Name VARCHAR(50) PRIMARY KEY,
 Delta INTEGER,
@@ -21,7 +23,9 @@ medianvalue REAL,
 maxvalue REAL,
 minvalue REAL
 )
+
 ---------for Values table--------------------
+
 CREATE TABLE Values (
 Id SERIAL PRIMARY KEY,
 Date TIMESTAMP,
