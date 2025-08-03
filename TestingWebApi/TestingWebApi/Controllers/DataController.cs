@@ -1,0 +1,173 @@
+using CsvHelper;
+using Microsoft.AspNetCore.Mvc;
+using System;
+
+namespace TestingWebApi.Controllers
+{
+    [ApiController]
+    [Tags("Data")]
+    [Route("[controller]")]
+    public class DataController : ControllerBase
+    {
+
+        private readonly ILogger<DataController> _logger;
+
+        public DataController(ILogger<DataController> logger)
+        {
+            _logger = logger;
+        }
+
+        [HttpGet("GetData")]
+        public IEnumerable<Data> GetData()
+        {
+
+            IEnumerable<Data> data = Enumerable.Range(1, 5).Select(index => new Data
+            {
+                date = DateTime.Now.AddSeconds(-index*3).AddMilliseconds(Random.Shared.Next(0, 999)).ToUniversalTime(),
+                executiontime = Random.Shared.Next(0, 100),
+                value = Random.Shared.NextDouble()
+            }).ToArray();
+
+            using (ApplicationContext db = new ApplicationContext())
+            {
+                db.Data.AddRange(data);
+                db.SaveChanges();
+            }
+
+            return data;
+        }
+
+        [HttpPost("PostCSV")]
+        [Produces("application/json")]
+        public string PostCSV(IFormFile file)
+        {
+            if (!file.FileName.EndsWith(".csv")) return "Wrong file extension";
+            
+            using var fileStream = file.OpenReadStream();
+
+            using (var reader = new StreamReader(fileStream, System.Text.Encoding.UTF8))
+            using (var csvReader = new CsvReader(reader, System.Globalization.CultureInfo.InvariantCulture))
+            {
+                List<CSVData> records;
+                List<Data> data = new List<Data> { };
+                Result result = new Result
+                {
+                    name = file.FileName,
+                    delta = 0,
+                    date = DateTime.Now,
+                    averageexecutiontime = 0,
+                    averagevalue = 0,
+                    medianvalue = 0,
+                    maxvalue = int.MinValue,
+                    minvalue = int.MaxValue
+                };
+                DateTime maxdate = new DateTime(1999, 1, 1);
+                DateTime mindate = DateTime.Now;
+
+
+                try
+                {
+                    records = csvReader.GetRecords<CSVData>().ToList();
+                } catch (CsvHelper.TypeConversion.TypeConverterException)
+                {
+                    return $"invalid data file: unmatching type or missing";
+                }
+                
+
+                if (records.Count > 10000 || records.Count == 0) return $"invalid data file: Lines count = {records.Count}";
+
+                foreach (CSVData d in records)
+                {
+                    // validating data and adding in to final AddList
+
+                    if ((DateTime.Compare(d.date, new DateTime(2000, 1, 1))<=0 || DateTime.Compare(d.date, DateTime.Now)>0) ||
+                        (d.executiontime < 0) || 
+                        (d.value < 0)) return $"invalid data at {d.date} | {d.executiontime} | {d.value}";
+                    d.date = d.date.ToUniversalTime();
+                    data.Add(new Data { id=0, date=d.date, executiontime=d.executiontime, value=d.value });
+
+                    if (DateTime.Compare(d.date, maxdate) > 0) maxdate = d.date;
+                    if (DateTime.Compare(d.date, mindate) < 0) mindate = d.date;
+                    if (DateTime.Compare(d.date, result.date) < 0) result.date = d.date;
+                    if (d.value > result.maxvalue) result.maxvalue = d.value;
+                    if (d.value < result.minvalue) result.minvalue = d.value;
+                    result.averageexecutiontime += d.executiontime;
+                    result.averagevalue += d.value;
+                }
+                result.delta = (int)maxdate.Subtract(mindate).TotalSeconds;
+                result.averageexecutiontime /= records.Count;
+                result.averagevalue /= records.Count;
+                if (records.Count % 2 == 1) result.medianvalue = records[records.Count / 2].value;
+                else result.medianvalue = (records[records.Count / 2].value + records[records.Count / 2 - 1].value) / 2;
+
+                using (ApplicationContext db = new ApplicationContext())
+                {
+                    var results = db.Result.ToList();
+                    if (results != null)
+                    {
+                        if (results.Any(res => res.name == file.FileName))
+                        {
+                            var toChange = results.Find(res => res.name == file.FileName);
+                            db.Entry(toChange).CurrentValues.SetValues(result);
+                        } else db.Result.Add(result);
+                    }
+                    else db.Result.Add(result);
+
+                    db.Data.AddRange(data);
+                    db.SaveChanges();
+                }
+
+            }
+            return "file uploaded";
+        }
+
+        [HttpGet("SearchInResults")]
+        public IEnumerable<Result> SearchInResults(DateTime maxdate, DateTime mindate, string filename = "", int averagevalmax = int.MaxValue, int averagevalmin = int.MinValue, int averageextimemax = int.MaxValue, int averageextimemin = int.MinValue)
+        {
+            if (maxdate == DateTime.MinValue)
+            {
+                maxdate = DateTime.MaxValue;
+            }
+            using (ApplicationContext db = new ApplicationContext())
+            {
+                var results = db.Result.ToList();
+                
+                if (filename != "") results = results.FindAll(res => res.name.StartsWith(filename));
+                results = results.FindAll(res => res.averagevalue <= averagevalmax && res.averagevalue >= averagevalmin);
+                results = results.FindAll(res => res.averageexecutiontime <= averageextimemax && res.averageexecutiontime >= averageextimemin);
+
+                return results;
+            }
+
+            
+        }
+
+        [HttpGet("GetLastTen")]
+        public IEnumerable<Data> GetLastTen()
+        {
+
+            using (ApplicationContext db = new ApplicationContext())
+            {
+                List<Data> dataList = db.Data.OrderBy(x => x.date).ToList();
+                int rangelength;
+                switch (dataList.Count)
+                {
+                    case 0: return dataList;
+                    case int n when (n < 10):
+                        rangelength = dataList.Count;
+                        break;
+                    case int n when (n > 10):
+                        rangelength = 10;
+                        break;
+                    default:
+                        rangelength = 10;
+                        break;
+                }
+
+                return db.Data.OrderBy(x => x.date).ToList().GetRange(0, rangelength);
+            }
+
+            
+        }
+    }
+}

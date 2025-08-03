@@ -1,0 +1,134 @@
+[
+  {
+    "ContainingType": "TestingWebApi.Controllers.DataController",
+    "Method": "GetData",
+    "RelativePath": "Data/GetData",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[TestingWebApi.Data, TestingWebApi, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "Tags": [
+      "Data"
+    ]
+  },
+  {
+    "ContainingType": "TestingWebApi.Controllers.DataController",
+    "Method": "GetLastTen",
+    "RelativePath": "Data/GetLastTen",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[TestingWebApi.Data, TestingWebApi, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "Tags": [
+      "Data"
+    ]
+  },
+  {
+    "ContainingType": "TestingWebApi.Controllers.DataController",
+    "Method": "PostCSV",
+    "RelativePath": "Data/PostCSV",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "file",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.String",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "Tags": [
+      "Data"
+    ]
+  },
+  {
+    "ContainingType": "TestingWebApi.Controllers.DataController",
+    "Method": "SearchInResults",
+    "RelativePath": "Data/SearchInResults",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "maxdate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "mindate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "filename",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "averagevalmax",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "averagevalmin",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "averageextimemax",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "averageextimemin",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[TestingWebApi.Result, TestingWebApi, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "Tags": [
+      "Data"
+    ]
+  }
+]
