@@ -1,6 +1,10 @@
 using CsvHelper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using System;
+using System.Xml.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TestingWebApi.Controllers
 {
@@ -29,7 +33,13 @@ namespace TestingWebApi.Controllers
             using (var csvReader = new CsvReader(reader, System.Globalization.CultureInfo.InvariantCulture))
             {
                 List<CSVData> records;
-                List<Data> data = new List<Data> { };
+                List<Data> data = new List<Data>{ };
+                int lastid = 1;
+                using (ApplicationContext db = new ApplicationContext())
+                {
+                    List<Result> last = db.Result.OrderByDescending(d => d.id).Take(1).ToList();
+                    if (last.Count > 0) lastid = last[0].id + 1;
+                }
                 Result result = new Result
                 {
                     name = file.FileName,
@@ -64,7 +74,7 @@ namespace TestingWebApi.Controllers
                         (d.executiontime < 0) || 
                         (d.value < 0)) return $"invalid data at {d.date} | {d.executiontime} | {d.value}";
                     d.date = d.date.ToUniversalTime();
-                    data.Add(new Data { id=0, date=d.date, executiontime=d.executiontime, value=d.value });
+                    data.Add(new Data { id=0, date=d.date, executiontime=d.executiontime, value=d.value, fileid = lastid });
 
                     if (DateTime.Compare(d.date, maxdate) > 0) maxdate = d.date;
                     if (DateTime.Compare(d.date, mindate) < 0) mindate = d.date;
@@ -77,6 +87,7 @@ namespace TestingWebApi.Controllers
                 result.delta = (int)maxdate.Subtract(mindate).TotalSeconds;
                 result.averageexecutiontime /= records.Count;
                 result.averagevalue /= records.Count;
+                records = records.OrderBy(r => r.value).ToList();
                 if (records.Count % 2 == 1) result.medianvalue = records[records.Count / 2].value;
                 else result.medianvalue = (records[records.Count / 2].value + records[records.Count / 2 - 1].value) / 2;
 
@@ -112,7 +123,7 @@ namespace TestingWebApi.Controllers
             {
                 var results = db.Result.ToList();
                 
-                if (filename != "") results = results.FindAll(res => res.name.StartsWith(filename));
+                results = results.FindAll(res => res.name.StartsWith(filename));
                 results = results.FindAll(res => res.averagevalue <= averagevalmax && res.averagevalue >= averagevalmin);
                 results = results.FindAll(res => res.averageexecutiontime <= averageextimemax && res.averageexecutiontime >= averageextimemin);
 
@@ -123,32 +134,24 @@ namespace TestingWebApi.Controllers
         }
 
         [HttpGet("GetLastTen")]
-        public IEnumerable<Data> GetLastTen()
+        public IEnumerable<Data> GetLastTen(string filename = "")
         {
 
             using (ApplicationContext db = new ApplicationContext())
             {
-                List<Data> dataList = db.Data.OrderBy(x => x.date).ToList();
-                int rangelength;
-                switch (dataList.Count)
+                List<Data> toReturn = new List<Data> { };
+
+                int fileid;
+                if (filename!="" && db.Result.Any(res => res.name.StartsWith(filename)))
                 {
-                    case 0: return dataList;
-                    case int n when (n < 10):
-                        rangelength = dataList.Count;
-                        break;
-                    case int n when (n > 10):
-                        rangelength = 10;
-                        break;
-                    default:
-                        rangelength = 10;
-                        break;
+                    fileid = db.Result.Where(res => res.name.StartsWith(filename)).ToList()[0].id;
+                    return db.Data.Where(res => res.fileid == fileid).OrderByDescending(d => d.date).Take(10).Reverse().ToList(); ;
                 }
 
-                return db.Data.OrderBy(x => x.date).ToList().GetRange(0, rangelength);
+                return toReturn = db.Data.OrderByDescending(d => d.date).Take(10).Reverse().ToList();
             }
 
             
         }
     }
 }
-
