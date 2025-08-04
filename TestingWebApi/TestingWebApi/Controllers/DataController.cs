@@ -17,26 +17,6 @@ namespace TestingWebApi.Controllers
             _logger = logger;
         }
 
-        [HttpGet("GetData")]
-        public IEnumerable<Data> GetData()
-        {
-
-            IEnumerable<Data> data = Enumerable.Range(1, 5).Select(index => new Data
-            {
-                date = DateTime.Now.AddSeconds(-index*3).AddMilliseconds(Random.Shared.Next(0, 999)).ToUniversalTime(),
-                executiontime = Random.Shared.Next(0, 100),
-                value = Random.Shared.NextDouble()
-            }).ToArray();
-
-            using (ApplicationContext db = new ApplicationContext())
-            {
-                db.Data.AddRange(data);
-                db.SaveChanges();
-            }
-
-            return data;
-        }
-
         [HttpPost("PostCSV")]
         [Produces("application/json")]
         public string PostCSV(IFormFile file)
@@ -171,3 +151,4 @@ namespace TestingWebApi.Controllers
         }
     }
 }
+
