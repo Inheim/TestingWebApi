@@ -21,7 +21,8 @@ AverageExecutionTime REAL,
 averagevalue REAL,
 medianvalue REAL,
 maxvalue REAL,
-minvalue REAL
+minvalue REAL,
+id SERIAL
 )
 
 ---------for Values table--------------------
@@ -30,7 +31,8 @@ CREATE TABLE Values (
 Id SERIAL PRIMARY KEY,
 Date TIMESTAMP,
 ExecutionTime INTEGER,
-Value REAL
+Value REAL,
+Fileid INTEGER
 )
 
 Check if everything right in connection string in program.cs and in Data.cs
